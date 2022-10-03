@@ -4,23 +4,12 @@
 #include "SoftwareSerial.h"
 #include "DFRobotDFPlayerMini.h"
 
-/*
- * Usermods allow you to add own functionality to WLED more easily
- * See: https://github.com/Aircoookie/WLED/wiki/Add-own-functionality
- * 
- * This is an example for a v2 usermod.
- * v2 usermods are class inheritance based and can (but don't have to) implement more functions, each of them is shown in this example.
- * Multiple v2 usermods can be added to one compilation easily.
- * 
- * Creating a usermod:
- * This file serves as an example. If you want to create a usermod, it is recommended to use usermod_v2_empty.h from the usermods folder as a template.
- * Please remember to rename the class and file to a descriptive name.
- * You may also use multiple .h and .cpp files.
- * 
- * Using a usermod:
- * 1. Copy the usermod into the sketch folder (same folder as wled00.ino)
- * 2. Register the usermod by adding #include "usermod_filename.h" in the top and registerUsermod(new MyUsermodClass()) in the bottom of usermods_list.cpp
- */
+constexpr const char* MAGNET_CLOSE_KEY = "Play Music if Magnet is Close";
+constexpr const char* HALL_SENSOR_KEY = "Hall Sensor Pin";
+
+constexpr const char* MP3_OUTPUT_PIN_KEY = "MP3 Output Pin";
+constexpr const char* MP3_INPUT_PIN_KEY = "MP3 Input Pin";
+
 
 class MandrakeUsermod : public Usermod {
   private:
@@ -30,7 +19,7 @@ class MandrakeUsermod : public Usermod {
     uint8_t hallSensorPin = 13;
 
     bool isPlaying = false;
-    bool playMusicIfMagnetIsClose = false;
+    bool playMusicIfMagnetIsClose = true;
     //Private class members. You can declare variables and functions only accessible to your usermod here
     unsigned long lastTime = 0;
 
@@ -121,23 +110,11 @@ class MandrakeUsermod : public Usermod {
     
     void addToJsonInfo(JsonObject& root)
     {
-        //this code adds "u":{"Light":[20," lux"]} to the info object
         JsonObject user = root["u"];
         if (user.isNull()) user = root.createNestedObject("u");
 
-        JsonObject mandrake = user.createNestedObject("Mandrake"); //name
-
-        JSONArray mp3InArr = mandrake.createNestedArray("MP3 Input Pin");
-        mp3InArr.add(mp3InputPin); //value
-        mp3InArr.add(" Pin"); //unit
-
-        JSONArray mp3OutArr = mandrake.createNestedArray("MP3 Output Pin");
-        mp3OutArr.add(mp3OutputPin); //value
-        mp3OutArr.add(" Pin"); //unit
-
-        JSONArray hallArr = mandrake.createNestedArray("Hall Sensor Array");
-        hallArr.add(hallSensorPin);
-        hallArr.add(" Pin");
+        JsonArray playArr = user.createNestedArray(MAGNET_CLOSE_KEY);
+        playArr.add(playMusicIfMagnetIsClose);
     }
     
 
@@ -179,10 +156,10 @@ class MandrakeUsermod : public Usermod {
     void addToConfig(JsonObject& root)
     {
       JsonObject top = root.createNestedObject("mandrakeusermod");
-      top["mp3outputpin"] = mp3OutputPin;
-      top["mp3inputpin"] = mp3InputPin;
-      top["hallsensorpin"] = hallSensorPin;
-      top["playifmagnetclose"] = playMusicIfMagnetIsClose;
+      top[MP3_OUTPUT_PIN_KEY] = mp3OutputPin;
+      top[MP3_INPUT_PIN_KEY] = mp3InputPin;
+      top[HALL_SENSOR_KEY] = hallSensorPin;
+      top[MAGNET_CLOSE_KEY] = playMusicIfMagnetIsClose;
     }
 
 
@@ -202,15 +179,14 @@ class MandrakeUsermod : public Usermod {
     {
         //set defaults for variables when declaring the variable (class definition or constructor)
         JsonObject top = root["mandrakeusermod"];
-        if (!top.isNull()) return false;
+        if (top.isNull()) return false;
 
-        mp3OutputPin = top["mp3outputpin"] | mp3OutputPin;
-        mp3InputPin = top["mp3inputpin"] | mp3InputPin;
-        hallSensorPin = top["hallsensorpin"] | hallSensorPin;
-        playMusicIfMagnetIsClose = top["playifmagnetclose"] | playMusicIfMagnetIsClose;
+        mp3OutputPin = top[MP3_OUTPUT_PIN_KEY] | mp3OutputPin;
+        mp3InputPin = top[MP3_INPUT_PIN_KEY] | mp3InputPin;
+        hallSensorPin = top[HALL_SENSOR_KEY] | hallSensorPin;
+        playMusicIfMagnetIsClose = top[MAGNET_CLOSE_KEY];
 
-        // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-        return true;
+        return !top[MAGNET_CLOSE_KEY].isNull();;
     }
 
    
@@ -220,7 +196,7 @@ class MandrakeUsermod : public Usermod {
      */
     uint16_t getId()
     {
-      return USERMOD_ID_EXAMPLE;
+      return USERMOD_ID_MANDRAKE;
     }
 
    //More methods can be added in the future, this example will then be extended.
